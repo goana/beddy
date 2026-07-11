@@ -20,7 +20,7 @@ export default function ColorsTab() {
   }, [q])
 
   return (
-    <div>
+    <div className="colors-tab">
       {selected && (
         <div className="selected-card">
           <div className="chip" style={{ background: selected.hex }} />
