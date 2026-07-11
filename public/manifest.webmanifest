@@ -1,0 +1,16 @@
+{
+  "name": "beddy · patrones Miyuki",
+  "short_name": "beddy",
+  "description": "Diseñador de patrones para pulseras Miyuki Delica",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0a0b11",
+  "theme_color": "#0a0b11",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

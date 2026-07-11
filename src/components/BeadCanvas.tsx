@@ -5,9 +5,10 @@ import { canvasSize, drawPattern, hitTest } from '../lib/render'
 interface Props {
   cellPx: number
   light: boolean
+  onZoom: (next: number) => void
 }
 
-export default function BeadCanvas({ cellPx, light }: Props) {
+export default function BeadCanvas({ cellPx, light, onZoom }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const pattern = useStore((s) => s.pattern)
   const rev = useStore((s) => s.rev)
@@ -16,10 +17,16 @@ export default function BeadCanvas({ cellPx, light }: Props) {
   const applyAt = useStore((s) => s.applyAt)
 
   const [hover, setHover] = useState<{ row: number; col: number } | null>(null)
-  const drawing = useRef(false)
   const pad = Math.round(cellPx * 0.7)
 
-  // Redibuja cuando cambia el patrón, el zoom o el hover
+  // Estado de punteros para distinguir pintar (1 dedo) de zoom (2 dedos)
+  const pointers = useRef<Map<number, { x: number; y: number }>>(new Map())
+  const pinch = useRef<{ dist: number; zoom: number } | null>(null)
+  const drawing = useRef(false)
+  const pendingTap = useRef<{ row: number; col: number } | null>(null)
+
+  const mutates = tool === 'paint' || tool === 'erase' || tool === 'fill'
+
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -37,31 +44,79 @@ export default function BeadCanvas({ cellPx, light }: Props) {
   function toCell(e: React.PointerEvent) {
     const canvas = canvasRef.current!
     const rect = canvas.getBoundingClientRect()
-    const px = e.clientX - rect.left
-    const py = e.clientY - rect.top
-    return hitTest(pattern, px, py, cellPx, pad)
+    return hitTest(pattern, e.clientX - rect.left, e.clientY - rect.top, cellPx, pad)
+  }
+
+  function dist() {
+    const [a, b] = [...pointers.current.values()]
+    return Math.hypot(a.x - b.x, a.y - b.y)
   }
 
   function onPointerDown(e: React.PointerEvent) {
-    const cell = toCell(e)
-    if (!cell) return
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
     e.currentTarget.setPointerCapture(e.pointerId)
-    // fill/eyedropper: una sola acción, sin arrastre
-    if (tool === 'paint' || tool === 'erase') {
-      drawing.current = true
-      beginStroke()
+
+    // Segundo dedo -> empieza el zoom, cancela cualquier trazo
+    if (pointers.current.size === 2) {
+      drawing.current = false
+      pendingTap.current = null
+      pinch.current = { dist: dist(), zoom: cellPx }
+      return
     }
-    applyAt(cell.row, cell.col)
+    if (pointers.current.size > 2) return
+
+    const cell = toCell(e)
+    if (e.pointerType === 'touch') {
+      // Puede ser toque, arrastre o inicio de pellizco: esperamos al move/up
+      pendingTap.current = cell
+      return
+    }
+    // Ratón / lápiz: acción inmediata
+    if (mutates) drawing.current = true
+    if (cell) {
+      if (mutates) beginStroke()
+      applyAt(cell.row, cell.col)
+    }
   }
 
   function onPointerMove(e: React.PointerEvent) {
+    if (pointers.current.has(e.pointerId)) {
+      pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    }
+    setHover(toCell(e))
+
+    // Zoom con dos dedos
+    if (pinch.current && pointers.current.size >= 2) {
+      const ratio = dist() / pinch.current.dist
+      onZoom(Math.round(pinch.current.zoom * ratio))
+      return
+    }
+
     const cell = toCell(e)
-    setHover(cell)
-    if (drawing.current && cell) applyAt(cell.row, cell.col)
+    if (e.pointerType === 'touch' && pendingTap.current !== null && !drawing.current) {
+      // Se mueve el dedo -> era un trazo, no un toque
+      if (mutates) {
+        drawing.current = true
+        beginStroke()
+        if (cell) applyAt(cell.row, cell.col)
+      }
+      pendingTap.current = null
+    } else if (drawing.current && cell) {
+      applyAt(cell.row, cell.col)
+    }
   }
 
-  function onPointerUp() {
-    drawing.current = false
+  function endPointer(e: React.PointerEvent) {
+    // Toque simple (sin arrastre ni pellizco) -> pinta/actúa una vez
+    if (e.pointerType === 'touch' && pendingTap.current && !pinch.current && !drawing.current) {
+      const cell = pendingTap.current
+      if (mutates) beginStroke()
+      applyAt(cell.row, cell.col)
+    }
+    pointers.current.delete(e.pointerId)
+    pendingTap.current = null
+    if (pointers.current.size < 2) pinch.current = null
+    if (pointers.current.size === 0) drawing.current = false
   }
 
   return (
@@ -70,10 +125,14 @@ export default function BeadCanvas({ cellPx, light }: Props) {
       className="bead-canvas"
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerLeave={() => {
+      onPointerUp={endPointer}
+      onPointerCancel={endPointer}
+      onPointerLeave={(e) => {
         setHover(null)
-        drawing.current = false
+        if (e.pointerType !== 'touch') {
+          drawing.current = false
+          pointers.current.delete(e.pointerId)
+        }
       }}
     />
   )

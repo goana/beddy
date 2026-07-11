@@ -182,7 +182,11 @@ export default function App() {
       {/* CANVAS */}
       <main className="canvas-area" ref={canvasAreaRef}>
         <div className="canvas-wrap">
-          <BeadCanvas cellPx={zoom} light={theme === 'light'} />
+          <BeadCanvas
+            cellPx={zoom}
+            light={theme === 'light'}
+            onZoom={(z) => setZoom(Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z)))}
+          />
         </div>
 
         <div className="zoombar">
