@@ -64,6 +64,40 @@ const BUTTERFLY_HALF = [
   '...kppppk', '....kppk.', '.....kk..',
 ]
 
+// --- Motivos originales (rejilla completa, verificados) --------------------
+const SETA = [
+  '....kkkkkkk....', '..kkrrrrrrrkk..', '.krrwwrrrwwrrk.', 'krrrrrrrrrrrrrk',
+  'krwwrrrrrrrwwrk', 'krrrrrwrwrrrrrk', '.krrrrrrrrrrrk.', '..kkccccccckk..',
+  '....kccccck....', '....kccccck....', '....kccccck....', '...kkccccckk...',
+]
+
+const FANTASMA = [
+  '....kkkkk....', '..kkwwwwwkk..', '.kwwwwwwwwwk.', 'kwwkkwwwkkwwk', 'kwwkkwwwkkwwk',
+  'kwwwwwwwwwwwk', 'kwwwwwwwwwwwk', 'kwwwwwwwwwwwk', 'kwwwwwwwwwwwk', 'kwkwwkwkwwkwk',
+]
+
+const RAYO = [
+  '....kk...', '...kyk...', '..kyyk...', '..kyk....', '.kyyk....', 'kyyyyyk..',
+  'kkkyyyk..', '...kyyk..', '...kyk...', '..kyk....', '..kk.....', '.kk......',
+]
+
+const CEREZA = [
+  '.........lll.', '........llgll', '.......llg.ll', '......kkg.ll.', '....kkgggk...',
+  '..kkg..g.kk..', '.krrk.krrrk..', 'krrrrkrrrrrk.', 'krrrrkrrrrrk.', 'krrrrkrrrrrk.',
+  '.krrk.krrrk..', '..kk...kkk...',
+]
+
+const OJO_TURCO = [
+  '.............', '...ddddddd...', '..dddwwwddd..', '.ddwwwbwwwdd.', '.ddwbbbbbwdd.',
+  '.dwwbkkkbwwd.', '.dwbbkkkbbwd.', '.dwwbkkkbwwd.', '.ddwbbbbbwdd.', '.ddwwwbwwwdd.',
+  '..dddwwwddd..', '...ddddddd...', '.............',
+]
+
+const ARCOIRIS = [
+  '...............', '.....RRRRR.....', '...RRRoooRRR...', '..RRooyyyooRR..',
+  '.RRoyyyyyyyoRR.', '.RoyygggggyyoR.', 'RRoygbbbbbgyoRR', 'Rwyygb...bgyywR', 'wwwygb...bgywww',
+]
+
 export const MOTIFS: Motif[] = [
   {
     id: 'gato-siames',
@@ -75,6 +109,60 @@ export const MOTIFS: Motif[] = [
       k: 'DB-10', b: 'DB-734', t: 'DB-1131', c: 'DB-1490', e: 'DB-628', g: 'DB-731',
     },
     rows: symmetric(CAT_HALF),
+  },
+  {
+    id: 'seta',
+    name: 'Seta',
+    keywords: ['seta', 'champiñon', 'champiñón', 'mushroom', 'hongo', 'bosque', 'cottagecore'],
+    stitch: 'loom',
+    background: 'DB-201',
+    legend: { k: 'DB-10', r: 'DB-723', w: 'DB-200', c: 'DB-1490' },
+    rows: SETA,
+  },
+  {
+    id: 'ojo-turco',
+    name: 'Ojo turco',
+    keywords: ['ojo', 'turco', 'nazar', 'evil eye', 'amuleto', 'proteccion', 'protección'],
+    stitch: 'loom',
+    background: 'DB-201',
+    legend: { d: 'DB-730', b: 'DB-2131', w: 'DB-200', k: 'DB-10' },
+    rows: OJO_TURCO,
+  },
+  {
+    id: 'fantasma',
+    name: 'Fantasma',
+    keywords: ['fantasma', 'ghost', 'halloween', 'boo', 'espiritu', 'espíritu'],
+    stitch: 'loom',
+    background: 'DB-361',
+    legend: { k: 'DB-10', w: 'DB-200' },
+    rows: FANTASMA,
+  },
+  {
+    id: 'rayo',
+    name: 'Rayo',
+    keywords: ['rayo', 'lightning', 'trueno', 'tormenta', 'energia', 'energía'],
+    stitch: 'loom',
+    background: 'DB-361',
+    legend: { k: 'DB-10', y: 'DB-721' },
+    rows: RAYO,
+  },
+  {
+    id: 'arcoiris',
+    name: 'Arcoíris',
+    keywords: ['arcoiris', 'arcoíris', 'rainbow', 'colores', 'orgullo', 'pride'],
+    stitch: 'loom',
+    background: 'DB-201',
+    legend: { R: 'DB-723', o: 'DB-722', y: 'DB-721', g: 'DB-724', b: 'DB-726', w: 'DB-200' },
+    rows: ARCOIRIS,
+  },
+  {
+    id: 'cerezas',
+    name: 'Cerezas',
+    keywords: ['cereza', 'cerezas', 'cherry', 'cherries', 'fruta', 'y2k'],
+    stitch: 'loom',
+    background: 'DB-201',
+    legend: { k: 'DB-10', r: 'DB-723', g: 'DB-733', l: 'DB-724' },
+    rows: CEREZA,
   },
   {
     id: 'corazon',
