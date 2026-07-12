@@ -3,6 +3,7 @@ import {
   createPattern,
   resizePattern,
   clamp,
+  makeId,
   MIN_SIZE,
   MAX_WIDTH,
   MAX_HEIGHT,
@@ -12,6 +13,8 @@ import {
 } from './lib/pattern'
 
 export type Tool = 'paint' | 'erase' | 'fill' | 'eyedropper'
+
+let idSeq = 0 // asegura ids únicos aunque se generen muy seguidos
 
 interface Snapshot {
   cells: Cell[]
@@ -151,8 +154,11 @@ export const useStore = create<AppState>((set, get) => ({
     set((s) => ({
       past: [...s.past, snapshot(s.pattern)],
       future: [],
+      // Reemplazar el lienzo (imagen/motivo) = diseño nuevo -> id nuevo,
+      // para que al guardar sea una entrada distinta y no sobrescriba.
       pattern: {
         ...s.pattern,
+        id: makeId(now() + ++idSeq),
         width,
         height,
         stitch: stitch ?? s.pattern.stitch,

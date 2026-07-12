@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useStore } from './store'
 import { MAX_HEIGHT, MAX_WIDTH } from './lib/pattern'
 import { exportPNG, exportBeadListCSV } from './lib/exportImage'
-import { exportJSON, importJSON } from './lib/storage'
+import { exportJSON, importJSON, savePattern } from './lib/storage'
 import BeadCanvas from './components/BeadCanvas'
 import Rail from './components/Rail'
 import ColorsTab from './components/ColorsTab'
@@ -112,6 +112,7 @@ export default function App() {
   async function onImport(file: File) {
     try {
       const p = await importJSON(file)
+      savePattern(p) // se añade a la biblioteca (Guardados)
       loadPattern(p)
       notify(`Importado: ${p.name}`)
     } catch {
