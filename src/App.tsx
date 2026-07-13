@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useStore } from './store'
 import { MAX_HEIGHT, MAX_WIDTH } from './lib/pattern'
 import { exportPNG, exportBeadListCSV } from './lib/exportImage'
-import { exportJSON, importJSON, savePattern } from './lib/storage'
+import { exportJSON, importJSON, savePattern, getProgress, setProgress } from './lib/storage'
 import BeadCanvas from './components/BeadCanvas'
 import Rail from './components/Rail'
 import ColorsTab from './components/ColorsTab'
@@ -47,6 +47,9 @@ export default function App() {
   const [toolsOpen, setToolsOpen] = useState(false)
   const [zoom, setZoom] = useState(24)
   const [theme, setTheme] = useState<'dark' | 'light'>(() => (localStorage.getItem('beddy.theme') as 'dark' | 'light') || 'dark')
+  const [showGuides, setShowGuides] = useState(() => localStorage.getItem('beddy.guides') !== '0')
+  const [tracking, setTracking] = useState(() => localStorage.getItem('beddy.tracking') === '1')
+  const [currentRow, setCurrentRow] = useState(0)
   const [sheetH, setSheetH] = useState<number | null>(null) // alto del panel en móvil (px)
   const [toast, setToast] = useState<string | null>(null)
   const dragRef = useRef<{ startY: number; startH: number } | null>(null)
@@ -85,6 +88,24 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', theme)
     localStorage.setItem('beddy.theme', theme)
   }, [theme])
+
+  useEffect(() => {
+    localStorage.setItem('beddy.guides', showGuides ? '1' : '0')
+  }, [showGuides])
+
+  useEffect(() => {
+    localStorage.setItem('beddy.tracking', tracking ? '1' : '0')
+  }, [tracking])
+
+  // Al cambiar de patrón, cargar su progreso guardado
+  useEffect(() => {
+    setCurrentRow(Math.min(getProgress(pattern.id), Math.max(0, pattern.height - 1)))
+  }, [pattern.id, pattern.height])
+
+  // Guardar el progreso de la fila actual
+  useEffect(() => {
+    setProgress(pattern.id, currentRow)
+  }, [pattern.id, currentRow])
 
   // Atajos de teclado
   useEffect(() => {
@@ -244,9 +265,35 @@ export default function App() {
           <BeadCanvas
             cellPx={zoom}
             light={theme === 'light'}
+            showGuides={showGuides}
+            tracking={tracking}
+            currentRow={currentRow}
             onZoom={(z) => setZoom(Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z)))}
           />
         </div>
+
+        <button
+          className={`guide-toggle ${showGuides ? 'active' : ''}`}
+          title={showGuides ? 'Ocultar números y rejilla' : 'Mostrar números y rejilla'}
+          onClick={() => setShowGuides((g) => !g)}
+        >
+          #
+        </button>
+        <button
+          className={`guide-toggle track-toggle ${tracking ? 'active' : ''}`}
+          title="Seguimiento de filas (para tejer)"
+          onClick={() => setTracking((t) => !t)}
+        >
+          ✓
+        </button>
+
+        {tracking && (
+          <div className="tracker-bar">
+            <button className="icon-btn" title="Fila anterior" onClick={() => setCurrentRow((r) => Math.max(0, r - 1))}>◀</button>
+            <span>Fila {currentRow + 1} / {pattern.height}</span>
+            <button className="icon-btn" title="Fila siguiente" onClick={() => setCurrentRow((r) => Math.min(pattern.height - 1, r + 1))}>▶</button>
+          </div>
+        )}
 
         <div className="zoombar">
           <button className="icon-btn" style={{ width: 30, height: 30 }} onClick={() => setZoom((z) => Math.max(ZOOM_MIN, z - 4))}>−</button>

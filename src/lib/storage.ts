@@ -53,6 +53,28 @@ export function listPatterns(): SavedMeta[] {
     .sort((a, b) => b.updatedAt - a.updatedAt)
 }
 
+// Progreso de tejido: fila actual por patrón (id -> fila 0-index)
+const PROGRESS_KEY = 'beddy.progress.v1'
+
+export function getProgress(id: string): number {
+  try {
+    const m = JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}') as Record<string, number>
+    return m[id] ?? 0
+  } catch {
+    return 0
+  }
+}
+
+export function setProgress(id: string, row: number): void {
+  try {
+    const m = JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}') as Record<string, number>
+    m[id] = row
+    localStorage.setItem(PROGRESS_KEY, JSON.stringify(m))
+  } catch {
+    // almacenamiento no disponible: se ignora
+  }
+}
+
 export function exportJSON(p: Pattern): void {
   download(`${slug(p.name)}.beddy.json`, JSON.stringify(p, null, 2), 'application/json')
 }

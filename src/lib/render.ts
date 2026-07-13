@@ -118,6 +118,93 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.closePath()
 }
 
+/**
+ * Dibuja los números de fila/columna y guías de rejilla alrededor del patrón.
+ * El contexto ya debe estar escalado (dpr) y sin trasladar; se usan offX/offY
+ * como márgenes izquierdo/superior donde caben los números.
+ */
+export function drawGuides(
+  ctx: CanvasRenderingContext2D,
+  p: Pattern,
+  opts: { cellPx: number; offX: number; offY: number; gridPad: number; light: boolean },
+) {
+  const { cellPx, offX, offY, gridPad, light } = opts
+  const u = beadUnit(p.stitch)
+  const dim = light ? '#5a6074' : '#9aa0b4'
+  const line = light ? 'rgba(0,0,0,0.09)' : 'rgba(255,255,255,0.09)'
+  const line5 = light ? 'rgba(0,0,0,0.20)' : 'rgba(255,255,255,0.22)'
+  const ex = patternExtent(p.stitch, p.width, p.height)
+  const x0 = offX + gridPad
+  const y0 = offY + gridPad
+  const gW = ex.w * cellPx
+  const gH = ex.h * cellPx
+
+  // Guías cada 5 (solo telar; en peyote las filas van escalonadas)
+  if (p.stitch === 'loom') {
+    ctx.lineWidth = 1
+    for (let c = 0; c <= p.width; c++) {
+      if (c % 5 !== 0) continue
+      const x = Math.round(x0 + c * u.w * cellPx) + 0.5
+      ctx.strokeStyle = c % 10 === 0 ? line5 : line
+      ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y0 + gH); ctx.stroke()
+    }
+    for (let r = 0; r <= p.height; r++) {
+      if (r % 5 !== 0) continue
+      const y = Math.round(y0 + r * u.h * cellPx) + 0.5
+      ctx.strokeStyle = r % 10 === 0 ? line5 : line
+      ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x0 + gW, y); ctx.stroke()
+    }
+  }
+
+  // Números
+  ctx.fillStyle = dim
+  const fs = Math.max(8, Math.min(12, Math.round(cellPx * 0.44)))
+  ctx.font = `600 ${fs}px system-ui, -apple-system, sans-serif`
+  const colStep = p.width <= 15 ? 1 : p.width <= 40 ? 5 : 10
+  ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'
+  for (let c = 0; c < p.width; c++) {
+    if (c !== 0 && c !== p.width - 1 && (c + 1) % colStep !== 0) continue
+    ctx.fillText(String(c + 1), x0 + (c + 0.5) * u.w * cellPx, offY - 3)
+  }
+  const rowStep = p.height <= 15 ? 1 : p.height <= 40 ? 5 : 10
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle'
+  for (let r = 0; r < p.height; r++) {
+    if (r !== 0 && r !== p.height - 1 && (r + 1) % rowStep !== 0) continue
+    ctx.fillText(String(r + 1), offX - 4, y0 + (r + 0.5) * u.h * cellPx)
+  }
+}
+
+/**
+ * Seguimiento de tejido: atenúa las filas ya hechas (0..currentRow-1) y
+ * resalta la fila actual. Se dibuja en coordenadas de rejilla (dentro del
+ * translate del patrón), después de las cuentas.
+ */
+export function drawTracker(
+  ctx: CanvasRenderingContext2D,
+  p: Pattern,
+  opts: { cellPx: number; gridPad: number; currentRow: number; light: boolean },
+) {
+  const { cellPx, gridPad, currentRow, light } = opts
+  const u = beadUnit(p.stitch)
+  const rowH = u.h * cellPx
+  const w = patternExtent(p.stitch, p.width, p.height).w * cellPx
+  const clamped = Math.max(0, Math.min(currentRow, p.height - 1))
+
+  // Filas hechas: velo del color del fondo (parecen "tachadas"/apagadas)
+  if (clamped > 0) {
+    ctx.fillStyle = light ? 'rgba(247,248,252,0.68)' : 'rgba(13,15,22,0.66)'
+    ctx.fillRect(gridPad, gridPad, w, clamped * rowH)
+  }
+
+  // Fila actual: banda y borde de acento
+  const y = gridPad + clamped * rowH
+  ctx.fillStyle = 'rgba(124,92,255,0.18)'
+  ctx.fillRect(gridPad, y, w, rowH)
+  ctx.lineWidth = 2.5
+  ctx.strokeStyle = '#7c5cff'
+  ctx.strokeRect(gridPad + 1.25, y + 1.25, w - 2.5, rowH - 2.5)
+}
+
 /** Convierte coordenadas de píxel del canvas a (row, col) de la rejilla, o null. */
 export function hitTest(
   p: Pattern,

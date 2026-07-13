@@ -223,6 +223,26 @@ button { font-family: inherit; cursor: pointer; }
 }
 .zoombar span { font-size: 12px; color: var(--text-dim); min-width: 42px; text-align: center; font-variant-numeric: tabular-nums; }
 
+.guide-toggle {
+  position: absolute; left: 16px; top: 16px; z-index: 5;
+  width: 38px; height: 38px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--panel-2); color: var(--text-dim);
+  font-size: 18px; font-weight: 800; display: grid; place-items: center;
+  box-shadow: var(--shadow); transition: 0.15s;
+}
+.guide-toggle:hover { color: var(--text); border-color: var(--accent); }
+.guide-toggle.active { background: var(--accent-grad); color: #fff; border-color: transparent; }
+.track-toggle { top: 62px; font-size: 17px; }
+
+.tracker-bar {
+  position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 6;
+  display: flex; align-items: center; gap: 8px;
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px;
+  padding: 6px 8px; box-shadow: var(--shadow);
+}
+.tracker-bar span { font-size: 13px; font-weight: 700; color: var(--text); min-width: 104px; text-align: center; font-variant-numeric: tabular-nums; }
+.tracker-bar .icon-btn { width: 34px; height: 34px; }
+
 .readout {
   position: absolute; right: 16px; bottom: 16px;
   background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px;
@@ -427,6 +447,9 @@ input[type=range]::-webkit-slider-thumb {
   .canvas-wrap { padding: 10px; }
   .zoombar { left: 10px; bottom: 10px; }
   .readout { display: none; }
+  .tracker-bar { bottom: 58px; } /* por encima de la barra de zoom */
+  .guide-toggle { left: 12px; top: 12px; width: 36px; height: 36px; }
+  .track-toggle { top: 54px; }
 
   /* PANEL INFERIOR: ampliable arrastrando el tirador. Por defecto 1/5. */
   .sheet-grip {

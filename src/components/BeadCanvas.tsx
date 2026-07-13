@@ -1,14 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
-import { canvasSize, drawPattern, hitTest } from '../lib/render'
+import { canvasSize, drawGuides, drawPattern, drawTracker, hitTest } from '../lib/render'
 
 interface Props {
   cellPx: number
   light: boolean
+  showGuides: boolean
+  tracking: boolean
+  currentRow: number
   onZoom: (next: number) => void
 }
 
-export default function BeadCanvas({ cellPx, light, onZoom }: Props) {
+const GRID_PAD = 2
+
+export default function BeadCanvas({ cellPx, light, showGuides, tracking, currentRow, onZoom }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const pattern = useStore((s) => s.pattern)
   const rev = useStore((s) => s.rev)
@@ -17,9 +22,13 @@ export default function BeadCanvas({ cellPx, light, onZoom }: Props) {
   const applyAt = useStore((s) => s.applyAt)
 
   const [hover, setHover] = useState<{ row: number; col: number } | null>(null)
-  const pad = Math.round(cellPx * 0.7)
 
-  // Estado de punteros para distinguir pintar (1 dedo) de zoom (2 dedos)
+  // Márgenes: cuando hay guías, dejamos sitio a la izquierda/arriba para los números
+  const offX = showGuides ? String(pattern.height).length * 7 + 13 : Math.round(cellPx * 0.6)
+  const offY = showGuides ? 18 : Math.round(cellPx * 0.6)
+  const padR = showGuides ? 8 : offX
+  const padB = showGuides ? 8 : offY
+
   const pointers = useRef<Map<number, { x: number; y: number }>>(new Map())
   const pinch = useRef<{ dist: number; zoom: number } | null>(null)
   const drawing = useRef(false)
@@ -31,20 +40,28 @@ export default function BeadCanvas({ cellPx, light, onZoom }: Props) {
     const canvas = canvasRef.current
     if (!canvas) return
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
-    const size = canvasSize(pattern, cellPx, pad)
-    canvas.width = size.width * dpr
-    canvas.height = size.height * dpr
-    canvas.style.width = size.width + 'px'
-    canvas.style.height = size.height + 'px'
+    const gs = canvasSize(pattern, cellPx, GRID_PAD)
+    const W = offX + gs.width + padR
+    const H = offY + gs.height + padB
+    canvas.width = W * dpr
+    canvas.height = H * dpr
+    canvas.style.width = W + 'px'
+    canvas.style.height = H + 'px'
     const ctx = canvas.getContext('2d')!
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-    drawPattern(ctx, pattern, { cellPx, pad, hover, light })
-  }, [pattern, rev, cellPx, pad, hover, light])
+    ctx.clearRect(0, 0, W, H)
+    ctx.save()
+    ctx.translate(offX, offY)
+    drawPattern(ctx, pattern, { cellPx, pad: GRID_PAD, hover, light })
+    if (tracking) drawTracker(ctx, pattern, { cellPx, gridPad: GRID_PAD, currentRow, light })
+    ctx.restore()
+    if (showGuides) drawGuides(ctx, pattern, { cellPx, offX, offY, gridPad: GRID_PAD, light })
+  }, [pattern, rev, cellPx, offX, offY, padR, padB, hover, light, showGuides, tracking, currentRow])
 
   function toCell(e: React.PointerEvent) {
     const canvas = canvasRef.current!
     const rect = canvas.getBoundingClientRect()
-    return hitTest(pattern, e.clientX - rect.left, e.clientY - rect.top, cellPx, pad)
+    return hitTest(pattern, e.clientX - rect.left - offX, e.clientY - rect.top - offY, cellPx, GRID_PAD)
   }
 
   function dist() {
@@ -56,7 +73,6 @@ export default function BeadCanvas({ cellPx, light, onZoom }: Props) {
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
     e.currentTarget.setPointerCapture(e.pointerId)
 
-    // Segundo dedo -> empieza el zoom, cancela cualquier trazo
     if (pointers.current.size === 2) {
       drawing.current = false
       pendingTap.current = null
@@ -67,11 +83,9 @@ export default function BeadCanvas({ cellPx, light, onZoom }: Props) {
 
     const cell = toCell(e)
     if (e.pointerType === 'touch') {
-      // Puede ser toque, arrastre o inicio de pellizco: esperamos al move/up
       pendingTap.current = cell
       return
     }
-    // Ratón / lápiz: acción inmediata
     if (mutates) drawing.current = true
     if (cell) {
       if (mutates) beginStroke()
@@ -85,7 +99,6 @@ export default function BeadCanvas({ cellPx, light, onZoom }: Props) {
     }
     setHover(toCell(e))
 
-    // Zoom con dos dedos
     if (pinch.current && pointers.current.size >= 2) {
       const ratio = dist() / pinch.current.dist
       onZoom(Math.round(pinch.current.zoom * ratio))
@@ -94,7 +107,6 @@ export default function BeadCanvas({ cellPx, light, onZoom }: Props) {
 
     const cell = toCell(e)
     if (e.pointerType === 'touch' && pendingTap.current !== null && !drawing.current) {
-      // Se mueve el dedo -> era un trazo, no un toque
       if (mutates) {
         drawing.current = true
         beginStroke()
@@ -107,7 +119,6 @@ export default function BeadCanvas({ cellPx, light, onZoom }: Props) {
   }
 
   function endPointer(e: React.PointerEvent) {
-    // Toque simple (sin arrastre ni pellizco) -> pinta/actúa una vez
     if (e.pointerType === 'touch' && pendingTap.current && !pinch.current && !drawing.current) {
       const cell = pendingTap.current
       if (mutates) beginStroke()
